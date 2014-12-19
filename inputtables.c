@@ -18,7 +18,9 @@ static const char *evnames[EV_CNT] = {
 	[EV_PWR] = "PWR",
 };
 
+#ifndef SYN_CNT
 #define SYN_CNT 4
+#endif
 static const char *synnames[SYN_CNT] = {
 	ELEMENT(SYN_REPORT),
 	ELEMENT(SYN_CONFIG),

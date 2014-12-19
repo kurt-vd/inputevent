@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
 				inputeventtostr(evs[j].type, evs[j].code),
 				evs[j].value);
 		}
+		fflush(stdout);
 	}
 	return 0;
 }

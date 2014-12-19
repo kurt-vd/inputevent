@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <time.h>
 
 #include <unistd.h>
 #include <getopt.h>
@@ -48,6 +50,9 @@ static const char help_msg[] =
 	" -?, --help		Show this help message\n"
 	" -i, --info		Show info & exit\n"
 	" -g, --grab		Grab device\n"
+	" -l, --long[=TIME]	Detect additionally long or short keypresses\n"
+	"			This is for EV_KEY events only.\n"
+	"			TIME defaults to 0.25 sec\n"
 	;
 
 static struct option long_opts[] = {
@@ -56,14 +61,32 @@ static struct option long_opts[] = {
 
 	{ "info", no_argument, NULL, 'i', },
 	{ "grab", no_argument, NULL, 'g', },
+	{ "long", optional_argument, NULL, 'l', },
 	{ },
 };
-static const char optstring[] = "+?Vig";
+static const char optstring[] = "+?Vigl::";
+
+/* time cache */
+static struct timeval tlong = { .tv_sec = 0, .tv_usec = 250000, };
+static struct timeval *keytimes;
 
 static const char *valuetostr(struct input_event *ev)
 {
 	static char buf[64];
 
+	if ((ev->type == EV_KEY) && keytimes && (ev->code < KEY_CNT)) {
+		/* do longpress detection */
+		if (ev->value == 1) {
+			keytimes[ev->code] = ev->time;
+		} else if (ev->value == 0) {
+			/* up */
+			struct timeval tdiff;
+
+			timersub(&ev->time, &keytimes[ev->code], &tdiff);
+			if (timercmp(&tdiff, &tlong, >))
+				return "long";
+		}
+	}
 	sprintf(buf, "%i", ev->value);
 	return buf;
 }
@@ -75,6 +98,7 @@ int main(int argc, char *argv[])
 	int options = 0;
 		#define OPT_INFO	1
 		#define OPT_GRAB	2
+		#define OPT_LONG	4
 	char *device;
 	struct input_event evs[16];
 
@@ -90,6 +114,16 @@ int main(int argc, char *argv[])
 	case 'g':
 		options |= OPT_GRAB;
 		break;
+	case 'l':
+		options |= OPT_LONG;
+		if (optarg) {
+			double dtime = strtod(optarg, NULL);
+			if (dtime > 0.001) {
+				tlong.tv_sec = lround(floor(dtime));
+				tlong.tv_usec = lround(dtime * 1e6) % 1000000;
+			}
+		}
+		break;
 	default:
 		fprintf(stderr, "%s: option '%c' unrecognised\n", NAME, opt);
 	case '?':
@@ -102,6 +136,12 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "No device given\n");
 		fputs(help_msg, stderr);
 		exit(1);
+	}
+
+	if (options & OPT_LONG) {
+		keytimes = malloc(sizeof(*keytimes) * KEY_CNT);
+		if (!keytimes)
+			elog(1, errno, "malloc keycache\n");
 	}
 
 	fd = open(device, O_RDONLY);

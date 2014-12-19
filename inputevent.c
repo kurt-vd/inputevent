@@ -60,6 +60,14 @@ static struct option long_opts[] = {
 };
 static const char optstring[] = "+?Vig";
 
+static const char *valuetostr(struct input_event *ev)
+{
+	static char buf[64];
+
+	sprintf(buf, "%i", ev->value);
+	return buf;
+}
+
 int main(int argc, char *argv[])
 {
 	int opt, j, ret;
@@ -157,10 +165,10 @@ int main(int argc, char *argv[])
 		if (ret < 0)
 			elog(1, errno, "read input");
 		for (j = 0; j < ret/sizeof(*evs); ++j) {
-			printf("%lu.%06lu %s %i\n",
+			printf("%lu.%06lu %s %s\n",
 				evs[j].time.tv_sec, evs[j].time.tv_usec,
 				inputeventtostr(evs[j].type, evs[j].code),
-				evs[j].value);
+				valuetostr(&evs[j]));
 		}
 		fflush(stdout);
 	}

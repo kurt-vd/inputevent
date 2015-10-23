@@ -4,6 +4,7 @@ default	: $(PROGS)
 VERSION:= $(shell git describe --always --tags --dirty)
 PREFIX	= /usr/local
 CFLAGS	= -g3 -O0 -Wall
+LDLIBS	= -lm
 
 -include config.mk
 

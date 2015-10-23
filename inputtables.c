@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include <linux/input.h>
+#include "myinput.h"
 
 #define ELEMENT(NAME)	[NAME] = #NAME
 

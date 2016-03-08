@@ -3,8 +3,8 @@ default	: $(PROGS)
 
 VERSION:= $(shell git describe --always --tags --dirty)
 PREFIX	= /usr/local
-CFLAGS	= -g3 -O0 -Wall
-LDLIBS	= -lm
+CFLAGS	= -Wall
+LDLIBS	=
 
 -include config.mk
 
@@ -12,6 +12,7 @@ CPPFLAGS+= -DVERSION=\"$(VERSION)\"
 
 .PHONY: clean install
 
+inputevent: LDLIBS+=-lm
 inputevent: inputtables.o
 
 clean:

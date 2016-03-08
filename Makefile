@@ -1,4 +1,4 @@
-PROGS	= inputevent
+PROGS	= inputevent timeofday
 default	: $(PROGS)
 
 VERSION:= $(shell git describe --always --tags --dirty)

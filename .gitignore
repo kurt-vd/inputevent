@@ -3,6 +3,7 @@
 
 # output binary
 inputevent
+timeofday
 
 # environment
 tags

@@ -26,7 +26,10 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <linux/input.h>
+
+#include "lib/libt.h"
 
 #define NAME "inputevent"
 
@@ -83,28 +86,19 @@ static struct option long_opts[] = {
 static const char optstring[] = "+?Vigl::";
 
 /* time cache */
+static double dtlong = 0.25;
 static struct timeval tlong = { .tv_sec = 0, .tv_usec = 250000, };
 static struct timeval *keytimes;
 
-static const char *valuetostr(struct input_event *ev)
+static void keytimeout(void *ptr)
 {
-	static char buf[64];
+	long keycode = (long)ptr;
+	struct timeval tv;
 
-	if ((ev->type == EV_KEY) && keytimes && (ev->code < KEY_CNT)) {
-		/* do longpress detection */
-		if (ev->value == 1) {
-			keytimes[ev->code] = ev->time;
-		} else if (ev->value == 0) {
-			/* up */
-			struct timeval tdiff;
-
-			timersub(&ev->time, &keytimes[ev->code], &tdiff);
-			if (timercmp(&tdiff, &tlong, >))
-				return "long";
-		}
-	}
-	sprintf(buf, "%i", ev->value);
-	return buf;
+	timeradd(&keytimes[keycode], &tlong, &tv);
+	printf("%lu.%06lu %s long\n",
+		tv.tv_sec, tv.tv_usec,
+		inputeventtostr(EV_KEY, keycode));
 }
 
 int main(int argc, char *argv[])
@@ -116,6 +110,7 @@ int main(int argc, char *argv[])
 		#define OPT_GRAB	2
 		#define OPT_LONG	4
 	char *device;
+	struct pollfd pollfd = { .events = POLLIN, };
 	struct input_event evs[16];
 
 	/* parse program options */
@@ -216,15 +211,41 @@ int main(int argc, char *argv[])
 		close(pp[1]);
 	}
 
+	/* prepare main loop */
+	pollfd.fd = fd;
+
 	while (1) {
+		libt_flush();
+		ret = poll(&pollfd, 1, libt_get_waittime());
+		if (ret < 0)
+			elog(1, errno, "poll");
+		if (!ret)
+			continue;
+
 		ret = read(fd, evs, sizeof(evs));
 		if (ret < 0)
 			elog(1, errno, "read input");
 		for (j = 0; j < ret/sizeof(*evs); ++j) {
-			printf("%lu.%06lu %s %s\n",
+			if ((options & OPT_LONG) && (evs[j].type == EV_KEY) &&
+					!evs[j].value && !libt_timeout_exist(keytimeout, (void *)(long)evs[j].code))
+				/* long press detection timeout has already passed */
+				continue;
+			if ((evs[j].type == EV_KEY) && keytimes && (evs[j].code < KEY_CNT)) {
+				/* do longpress detection */
+				if (evs[j].value == 1) {
+					keytimes[evs[j].code] = evs[j].time;
+					libt_add_timeout(dtlong, keytimeout, (void *)(long)evs[j].code);
+				} else if (!evs[j].value && libt_timeout_exist(keytimeout, (void *)(long)evs[j].code))
+					/* no long press detected yet */
+					libt_remove_timeout(keytimeout, (void *)(long)evs[j].code);
+				else
+					/* long press detected, or autorepeat */
+					continue;
+			}
+			printf("%lu.%06lu %s %i\n",
 				evs[j].time.tv_sec, evs[j].time.tv_usec,
 				inputeventtostr(evs[j].type, evs[j].code),
-				valuetostr(&evs[j]));
+				evs[j].value);
 		}
 		fflush(stdout);
 	}

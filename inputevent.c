@@ -171,25 +171,25 @@ int main(int argc, char *argv[])
 
 	/* show info when requested */
 	if (options & OPT_INFO) {
-	      char name[64];
-	      char phys[64];
-	      struct input_id id;
+		char name[64];
+		char phys[64];
+		struct input_id id;
 
-	      if (ioctl(fd, EVIOCGID, &id) < 0)
-		      elog(1, errno, "ioctl %s EVIOCGID\n", device);
-	      if (ioctl(fd, EVIOCGNAME(sizeof(name)), name) < 0)
-		      elog(1, errno, "ioctl %s EVIOCGNAME\n", device);
-	      if (ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys) < 0)
-		      elog(1, errno, "ioctl %s EVIOCGPHYS\n", device);
+		if (ioctl(fd, EVIOCGID, &id) < 0)
+			elog(1, errno, "ioctl %s EVIOCGID\n", device);
+		if (ioctl(fd, EVIOCGNAME(sizeof(name)), name) < 0)
+			elog(1, errno, "ioctl %s EVIOCGNAME\n", device);
+		if (ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys) < 0)
+			elog(1, errno, "ioctl %s EVIOCGPHYS\n", device);
 
-	      printf("### %s\n", device);
-	      printf("name: %s\n", name);
-	      printf("phys: %s\n", phys);
-	      printf("bus: %u\n", id.bustype);
-	      printf("vendor: 0x%04x\n", id.vendor);
-	      printf("product: 0x%04x\n", id.product);
-	      printf("version: %u\n", id.version);
-	      return 0;
+		printf("### %s\n", device);
+		printf("name: %s\n", name);
+		printf("phys: %s\n", phys);
+		printf("bus: %u\n", id.bustype);
+		printf("vendor: 0x%04x\n", id.vendor);
+		printf("product: 0x%04x\n", id.product);
+		printf("version: %u\n", id.version);
+		return 0;
 	}
 
 	if (options & OPT_GRAB) {

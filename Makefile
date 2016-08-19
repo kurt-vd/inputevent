@@ -16,7 +16,7 @@ inputevent: LDLIBS+=-lm
 inputevent: inputtables.o lib/libt.o
 
 clean:
-	rm -rf $(PROGS) *.o
+	rm -rf $(PROGS) $(wildcard *.o lib/*.o)
 
 install: $(PROGS)
 	@[ -d $(DESTDIR)$(PREFIX)/bin ] || install -v -d $(DESTDIR)$(PREFIX)/bin

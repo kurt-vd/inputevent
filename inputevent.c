@@ -69,6 +69,7 @@ static const char help_msg[] =
 	" -?, --help		Show this help message\n"
 	" -i, --info		Show info & exit\n"
 	" -0, --initial		Fetch initial state\n"
+	"			Twice will exit after the initial state\n"
 	" -g, --grab		Grab device\n"
 	" -l, --long[=TIME]	Detect additionally long or short keypresses\n"
 	"			This is for EV_KEY events only.\n"
@@ -112,6 +113,7 @@ int main(int argc, char *argv[])
 		#define OPT_GRAB	2
 		#define OPT_LONG	4
 		#define OPT_INITIAL	0x08
+		#define OPT_QUIT	0x10
 	char *device;
 	struct pollfd pollfd = { .events = POLLIN, };
 	struct input_event evs[16];
@@ -126,6 +128,8 @@ int main(int argc, char *argv[])
 		options |= OPT_INFO;
 		break;
 	case '0':
+		if (options & OPT_INITIAL)
+			options |= OPT_QUIT;
 		options |= OPT_INITIAL;
 		break;
 	case 'g':
@@ -235,6 +239,8 @@ int main(int argc, char *argv[])
 			if (state[j/8] & (1 << (j % 8)))
 				printf("i %s 1\n", inputeventtostr(EV_SW, j));
 		}
+		if (options & OPT_QUIT)
+			return 0;
 	}
 
 	/* prepare main loop */

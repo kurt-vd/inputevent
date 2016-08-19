@@ -68,6 +68,7 @@ static const char help_msg[] =
 	" -V, --version		Show version\n"
 	" -?, --help		Show this help message\n"
 	" -i, --info		Show info & exit\n"
+	" -0, --initial		Fetch initial state\n"
 	" -g, --grab		Grab device\n"
 	" -l, --long[=TIME]	Detect additionally long or short keypresses\n"
 	"			This is for EV_KEY events only.\n"
@@ -79,11 +80,12 @@ static struct option long_opts[] = {
 	{ "version", no_argument, NULL, 'V', },
 
 	{ "info", no_argument, NULL, 'i', },
+	{ "initial", no_argument, NULL, '0', },
 	{ "grab", no_argument, NULL, 'g', },
 	{ "long", optional_argument, NULL, 'l', },
 	{ },
 };
-static const char optstring[] = "+?Vigl::";
+static const char optstring[] = "+?Vi0gl::";
 
 /* time cache */
 static double dtlong = 0.25;
@@ -109,6 +111,7 @@ int main(int argc, char *argv[])
 		#define OPT_INFO	1
 		#define OPT_GRAB	2
 		#define OPT_LONG	4
+		#define OPT_INITIAL	0x08
 	char *device;
 	struct pollfd pollfd = { .events = POLLIN, };
 	struct input_event evs[16];
@@ -121,6 +124,9 @@ int main(int argc, char *argv[])
 		return 0;
 	case 'i':
 		options |= OPT_INFO;
+		break;
+	case '0':
+		options |= OPT_INITIAL;
 		break;
 	case 'g':
 		options |= OPT_GRAB;
@@ -209,6 +215,26 @@ int main(int argc, char *argv[])
 		dup2(pp[1], STDOUT_FILENO);
 		close(pp[0]);
 		close(pp[1]);
+	}
+
+	if (options & OPT_INITIAL) {
+		char state[KEY_CNT/8+1];
+		int j;
+
+		if (ioctl(fd, EVIOCGKEY(sizeof(state)), state) < 0)
+			elog(1, errno, "ioctl %s EVIOCGKEY\n", device);
+
+		for (j = 0; j < KEY_CNT; ++j) {
+			if (state[j/8] & (1 << (j % 8)))
+				printf("i %s 1\n", inputeventtostr(EV_KEY, j));
+		}
+		if (ioctl(fd, EVIOCGSW(sizeof(state)), state) < 0)
+			elog(1, errno, "ioctl %s EVIOCGKEY\n", device);
+
+		for (j = 0; j < SW_CNT; ++j) {
+			if (state[j/8] & (1 << (j % 8)))
+				printf("i %s 1\n", inputeventtostr(EV_SW, j));
+		}
 	}
 
 	/* prepare main loop */

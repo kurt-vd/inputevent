@@ -10,6 +10,8 @@
 
 extern int strtoinputevent(const char *str, int *ptype);
 extern const char *inputeventtostr(int type, int code);
+extern int inputeventnewname(int type, int code, const char *str);
+extern int inputeventloadmap(const char *file);
 
 #ifndef __KERNEL__
 #include <sys/time.h>

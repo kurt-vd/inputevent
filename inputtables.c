@@ -674,7 +674,7 @@ static const char *sndnames[SND_CNT] = {
 	ELEMENT(SND_TONE),
 };
 
-static const char *const *typetables[EV_CNT] = {
+static const char **typetables[EV_CNT] = {
 	[EV_SYN] = synnames,
 	[EV_KEY] = keynames,
 	[EV_REL] = relnames,
@@ -742,4 +742,14 @@ int strtoinputevent(const char *str, int *ptype)
 		}
 	}
 	return -1;
+}
+
+int inputeventnewname(int type, int code, const char *name)
+{
+	if (type >= EV_CNT)
+		return -1;
+	if (code >= typemax[type])
+		return -1;
+	typetables[type][code] = name;
+	return 0;
 }

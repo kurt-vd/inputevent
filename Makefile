@@ -13,7 +13,7 @@ CPPFLAGS+= -DVERSION=\"$(VERSION)\"
 .PHONY: clean install
 
 inputevent: LDLIBS+=-lm
-inputevent: inputtables.o lib/libt.o
+inputevent: inputtables.o modtables.o lib/libt.o
 
 clean:
 	rm -rf $(PROGS) $(wildcard *.o lib/*.o)

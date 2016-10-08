@@ -71,6 +71,8 @@ static const char help_msg[] =
 	" -l, --long[=TIME]	Detect additionally long or short keypresses\n"
 	"			This is for EV_KEY events only.\n"
 	"			TIME defaults to 0.25 sec\n"
+	" -m, --map=FILE	Map names from FILE\n"
+	"			FILE contains 'OLD NEW' pairs\n"
 	;
 
 static struct option long_opts[] = {
@@ -81,9 +83,10 @@ static struct option long_opts[] = {
 	{ "initial", no_argument, NULL, '0', },
 	{ "grab", no_argument, NULL, 'g', },
 	{ "long", optional_argument, NULL, 'l', },
+	{ "map", required_argument, NULL, 'm', },
 	{ },
 };
-static const char optstring[] = "+?Vi0gl::";
+static const char optstring[] = "+?Vi0gl::m:";
 
 /* time cache */
 static double dtlong = 0.25;
@@ -141,6 +144,10 @@ int main(int argc, char *argv[])
 				tlong.tv_usec = lround(dtime * 1e6) % 1000000;
 			}
 		}
+		break;
+	case 'm':
+		if (inputeventloadmap(optarg) < 0)
+			elog(1, errno, "load map from '%s'", optarg);
 		break;
 	default:
 		fprintf(stderr, "%s: option '%c' unrecognised\n", NAME, opt);

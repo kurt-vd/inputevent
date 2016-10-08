@@ -8,6 +8,8 @@
 #ifndef _UAPI_INPUT_H
 #define _UAPI_INPUT_H
 
+extern int strtoinputevent(const char *str, int *ptype);
+extern const char *inputeventtostr(int type, int code);
 
 #ifndef __KERNEL__
 #include <sys/time.h>

@@ -27,14 +27,11 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <linux/input.h>
 
+#include "myinput.h"
 #include "lib/libt.h"
 
 #define NAME "inputevent"
-
-extern int strtoinputevent(const char *str, int *ptype);
-extern const char *inputeventtostr(int type, int code);
 
 /* non-daemon syslog */
 static void elog(int exitcode, int errnum, const char *fmt, ...)

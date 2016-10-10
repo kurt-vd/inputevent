@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
 		}
 		if (options & OPT_QUIT)
 			return 0;
+		fflush(stdout);
 	}
 
 	/* prepare main loop */

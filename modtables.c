@@ -3,6 +3,14 @@
 #include <string.h>
 #include "myinput.h"
 
+/* Big fat warning:
+ * inputeventloadmap() leaks memory
+ * or better, is may consume memory that is never free'd.
+ * This is no problem if you use it only once at startup time.
+ * If you plan to use it regularly in your program, then this must
+ * be rewritten.
+ * You have been warned!
+ */
 int inputeventloadmap(const char *file)
 {
 	FILE *fp;
@@ -38,7 +46,7 @@ int inputeventloadmap(const char *file)
 				continue;
 			}
 		}
-		inputeventnewname(type, code, strtok(NULL, "\t \r\n\v\f"));
+		inputeventnewname(type, code, strdup(strtok(NULL, "\t \r\n\v\f") ?: ""));
 	}
 	fclose(fp);
 	return 0;

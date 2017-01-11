@@ -67,6 +67,7 @@ static const char help_msg[] =
 	" -i, --info		Show info & exit\n"
 	" -0, --initial		Fetch initial state\n"
 	"			Twice will exit after the initial state\n"
+	" -z, --zero		Print zero's on initial state\n"
 	" -g, --grab		Grab device\n"
 	" -l, --long[=TIME]	Detect additionally long or short keypresses\n"
 	"			This is for EV_KEY events only.\n"
@@ -81,12 +82,13 @@ static struct option long_opts[] = {
 
 	{ "info", no_argument, NULL, 'i', },
 	{ "initial", no_argument, NULL, '0', },
+	{ "zero", no_argument, NULL, 'z', },
 	{ "grab", no_argument, NULL, 'g', },
 	{ "long", optional_argument, NULL, 'l', },
 	{ "map", required_argument, NULL, 'm', },
 	{ },
 };
-static const char optstring[] = "+?Vi0gl::m:";
+static const char optstring[] = "+?Vi0zgl::m:";
 
 /* time cache */
 static double dtlong = 0.25;
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
 		#define OPT_LONG	4
 		#define OPT_INITIAL	0x08
 		#define OPT_QUIT	0x10
+		#define OPT_ZERO	0x20
 	char *device;
 	struct pollfd pollfd = { .events = POLLIN, };
 	struct input_event evs[16];
@@ -131,6 +134,9 @@ int main(int argc, char *argv[])
 		if (options & OPT_INITIAL)
 			options |= OPT_QUIT;
 		options |= OPT_INITIAL;
+		break;
+	case 'z':
+		options |= OPT_ZERO;
 		break;
 	case 'g':
 		options |= OPT_GRAB;
@@ -226,22 +232,31 @@ int main(int argc, char *argv[])
 	}
 
 	if (options & OPT_INITIAL) {
-		char state[KEY_CNT/8+1];
+		char state[KEY_CNT/8+1]; /* current state */
+		char wired[KEY_CNT/8+1]; /* possible state */
 		int j;
 
+#define getbit(x, vec)	((vec[(x)/8] >> ((x) % 8)) & 1)
+
+		if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(wired)), wired) < 0)
+			elog(1, errno, "ioctl %s EVIOCGBIT\n", device);
 		if (ioctl(fd, EVIOCGKEY(sizeof(state)), state) < 0)
 			elog(1, errno, "ioctl %s EVIOCGKEY\n", device);
 
 		for (j = 0; j < KEY_CNT; ++j) {
-			if (state[j/8] & (1 << (j % 8)))
-				printf("i %s 1\n", inputeventtostr(EV_KEY, j));
+			if (getbit(j, wired) && (getbit(j, state) || (options & OPT_ZERO)))
+				printf("i %s %i\n", inputeventtostr(EV_KEY, j), getbit(j, state));
 		}
+
+		/* similar for EV_SW */
+		if (ioctl(fd, EVIOCGBIT(EV_SW, sizeof(wired)), wired) < 0)
+			elog(1, errno, "ioctl %s EVIOCGBIT\n", device);
 		if (ioctl(fd, EVIOCGSW(sizeof(state)), state) < 0)
 			elog(1, errno, "ioctl %s EVIOCGKEY\n", device);
 
 		for (j = 0; j < SW_CNT; ++j) {
-			if (state[j/8] & (1 << (j % 8)))
-				printf("i %s 1\n", inputeventtostr(EV_SW, j));
+			if (getbit(j, wired) && (getbit(j, state) || (options & OPT_ZERO)))
+				printf("i %s %i\n", inputeventtostr(EV_SW, j), getbit(j, state));
 		}
 		if (options & OPT_QUIT)
 			return 0;

@@ -104,6 +104,8 @@ static void keytimeout(void *ptr)
 	printf("%lu.%06lu %s long\n",
 		tv.tv_sec, tv.tv_usec,
 		inputeventtostr(EV_KEY, keycode));
+	/* flush to stdout since we're about to enter the (poll) wait loop */
+	fflush(stdout);
 }
 
 int main(int argc, char *argv[])

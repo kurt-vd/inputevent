@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
 			if (dtime > 0.001) {
 				tlong.tv_sec = lround(floor(dtime));
 				tlong.tv_usec = lround(dtime * 1e6) % 1000000;
+				dtlong = dtime;
 			}
 		}
 		break;

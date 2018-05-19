@@ -699,18 +699,17 @@ static int typemax[EV_CNT] = {
 	[EV_SND] = SIZE(sndnames),
 };
 
-const char *inputeventtostr(int type, int code)
+const char *inputeventtostr(int type, int code, int numeric)
 {
 	static char buf[32];
-
-	sprintf(buf, "#%u:%u", type, code);
 
 	if (type >= EV_CNT) {
 		sprintf(buf, "#%u:%u", type, code);
 		return buf;
 	}
+
 	sprintf(buf, "%s_%u", evnames[type], code);
-	if (code >= typemax[type])
+	if (numeric || code >= typemax[type])
 		return buf;
 	return (typetables[type])[code] ?: buf;
 }

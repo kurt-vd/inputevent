@@ -9,7 +9,7 @@
 #define _UAPI_INPUT_H
 
 extern int strtoinputevent(const char *str, int *ptype);
-extern const char *inputeventtostr(int type, int code);
+extern const char *inputeventtostr(int type, int code, int numeric);
 extern int inputeventnewname(int type, int code, const char *str);
 extern int inputeventloadmap(const char *file);
 

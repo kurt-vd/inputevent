@@ -74,6 +74,7 @@ static const char help_msg[] =
 	"			TIME defaults to 0.25 sec\n"
 	" -m, --map=FILE	Map names from FILE\n"
 	"			FILE contains 'OLD NEW' pairs\n"
+	" -n, --numeric		Show numeric codes\n"
 	;
 
 static struct option long_opts[] = {
@@ -86,9 +87,19 @@ static struct option long_opts[] = {
 	{ "grab", no_argument, NULL, 'g', },
 	{ "long", optional_argument, NULL, 'l', },
 	{ "map", required_argument, NULL, 'm', },
+	{ "numeric", no_argument, NULL, 'n', },
 	{ },
 };
-static const char optstring[] = "+?Vi0zgl::m:";
+static const char optstring[] = "+?Vi0zgl::m:n";
+
+static int options = 0;
+	#define OPT_INFO	1
+	#define OPT_GRAB	2
+	#define OPT_LONG	4
+	#define OPT_INITIAL	0x08
+	#define OPT_QUIT	0x10
+	#define OPT_ZERO	0x20
+	#define OPT_NUM		0x40
 
 /* time cache */
 static double dtlong = 0.25;
@@ -103,7 +114,7 @@ static void keytimeout(void *ptr)
 	timeradd(&keytimes[keycode], &tlong, &tv);
 	printf("%lu.%06lu %s long\n",
 		tv.tv_sec, tv.tv_usec,
-		inputeventtostr(EV_KEY, keycode));
+		inputeventtostr(EV_KEY, keycode, options & OPT_NUM));
 	/* flush to stdout since we're about to enter the (poll) wait loop */
 	fflush(stdout);
 }
@@ -112,13 +123,6 @@ int main(int argc, char *argv[])
 {
 	int opt, j, ret;
 	int fd;
-	int options = 0;
-		#define OPT_INFO	1
-		#define OPT_GRAB	2
-		#define OPT_LONG	4
-		#define OPT_INITIAL	0x08
-		#define OPT_QUIT	0x10
-		#define OPT_ZERO	0x20
 	char *device;
 	struct pollfd pollfd = { .events = POLLIN, };
 	struct input_event evs[16];
@@ -157,6 +161,9 @@ int main(int argc, char *argv[])
 	case 'm':
 		if (inputeventloadmap(optarg) < 0)
 			elog(1, errno, "load map from '%s'", optarg);
+		break;
+	case 'n':
+		options |= OPT_NUM;
 		break;
 	default:
 		fprintf(stderr, "%s: option '%c' unrecognised\n", NAME, opt);
@@ -248,7 +255,8 @@ int main(int argc, char *argv[])
 
 		for (j = 0; j < KEY_CNT; ++j) {
 			if (getbit(j, wired) && (getbit(j, state) || (options & OPT_ZERO)))
-				printf("i %s %i\n", inputeventtostr(EV_KEY, j), getbit(j, state));
+				printf("i %s %i\n", inputeventtostr(EV_KEY, j, options & OPT_NUM),
+						getbit(j, state));
 		}
 
 		/* similar for EV_SW */
@@ -259,7 +267,8 @@ int main(int argc, char *argv[])
 
 		for (j = 0; j < SW_CNT; ++j) {
 			if (getbit(j, wired) && (getbit(j, state) || (options & OPT_ZERO)))
-				printf("i %s %i\n", inputeventtostr(EV_SW, j), getbit(j, state));
+				printf("i %s %i\n", inputeventtostr(EV_SW, j, options & OPT_NUM),
+						getbit(j, state));
 		}
 		if (options & OPT_QUIT)
 			return 0;
@@ -299,7 +308,7 @@ int main(int argc, char *argv[])
 			}
 			printf("%lu.%06lu %s %i\n",
 				evs[j].time.tv_sec, evs[j].time.tv_usec,
-				inputeventtostr(evs[j].type, evs[j].code),
+				inputeventtostr(evs[j].type, evs[j].code, options & OPT_NUM),
 				evs[j].value);
 		}
 		fflush(stdout);

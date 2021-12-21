@@ -120,19 +120,30 @@ static void keytimeout(void *ptr)
 	fflush(stdout);
 }
 
+/* overrule the toolchain provided struct input_event.
+ * gcc messed a bit on arm eabi
+ */
+struct local_input_event {
+	unsigned long tv_sec;
+	unsigned long tv_usec;
+	uint16_t type;
+	uint16_t code;
+	int32_t value;
+};
 int main(int argc, char *argv[])
 {
 	int opt, j, ret;
 	int fd;
 	char *device;
 	struct pollfd pollfd = { .events = POLLIN, };
-	struct input_event evs[16];
+	struct local_input_event evs[16];
 
 	/* parse program options */
 	while ((opt = getopt_long(argc, argv, optstring, long_opts, NULL)) != -1)
 	switch (opt) {
 	case 'V':
 		fprintf(stderr, "%s: %s\n", NAME, VERSION);
+		fprintf(stderr, "struct input_event size: %u\n", sizeof(*evs));
 		return 0;
 	case 'i':
 		options |= OPT_INFO;
@@ -298,7 +309,8 @@ int main(int argc, char *argv[])
 			if ((evs[j].type == EV_KEY) && keytimes && (evs[j].code < KEY_CNT)) {
 				/* do longpress detection */
 				if (evs[j].value == 1) {
-					keytimes[evs[j].code] = evs[j].time;
+					keytimes[evs[j].code].tv_sec = evs[j].tv_usec;
+					keytimes[evs[j].code].tv_usec = evs[j].tv_usec;
 					libt_add_timeout(dtlong, keytimeout, (void *)(long)evs[j].code);
 				} else if (!evs[j].value && libt_timeout_exist(keytimeout, (void *)(long)evs[j].code))
 					/* no long press detected yet */
@@ -308,7 +320,7 @@ int main(int argc, char *argv[])
 					continue;
 			}
 			printf("%lu.%06lu %s %i\n",
-				evs[j].time.tv_sec, evs[j].time.tv_usec,
+				evs[j].tv_sec, evs[j].tv_usec,
 				inputeventtostr(evs[j].type, evs[j].code, options & OPT_NUM),
 				evs[j].value);
 		}
